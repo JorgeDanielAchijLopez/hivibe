@@ -125,7 +125,12 @@ export class ChatService {
       mensaje,
     );
 
-    await this.notifications.notifyMessage(destinatarioId, usuarioId, mensaje.id);
+    // La entrega del mensaje no debe fallar si la notificacion tiene un problema.
+    try {
+      await this.notifications.notifyMessage(destinatarioId, usuarioId, mensaje.id);
+    } catch {
+      // El mensaje ya fue persistido y enviado por Socket.IO.
+    }
 
     return mensaje;
   }
