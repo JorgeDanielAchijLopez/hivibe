@@ -7,12 +7,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly realtime: RealtimeGateway,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async crearConversacion(usuarioId: string, destinatarioId: string) {
@@ -122,6 +124,8 @@ export class ChatService {
       'chat:new',
       mensaje,
     );
+
+    await this.notifications.notifyMessage(destinatarioId, usuarioId, mensaje.id);
 
     return mensaje;
   }
