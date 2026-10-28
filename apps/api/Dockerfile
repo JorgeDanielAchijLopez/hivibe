@@ -11,7 +11,7 @@ COPY prisma.config.ts ./
 COPY tsconfig*.json nest-cli.json ./
 COPY src ./src
 
-RUN npm run build
+RUN DATABASE_URL="postgresql://hivibe:build-only@localhost:5432/hivibe?schema=public" npm run build
 
 ENV NODE_ENV=production
 ENV PORT=4300
