@@ -28,6 +28,7 @@ export class RealtimeGateway
   server!: Server;
 
   private readonly logger = new Logger(RealtimeGateway.name);
+  private readonly conexiones = new Map<string, number>();
 
   constructor(private readonly jwtService: JwtService) {}
 
@@ -52,6 +53,12 @@ export class RealtimeGateway
 
       await client.join(`user:${usuario.sub}`);
 
+      const conexionesPrevias = this.conexiones.get(usuario.sub) ?? 0;
+      this.conexiones.set(usuario.sub, conexionesPrevias + 1);
+      if (conexionesPrevias === 0) {
+        this.server.emit('presence:update', { userId: usuario.sub, online: true });
+      }
+
       this.logger.log('Usuario conectado al chat');
     } catch {
       client.disconnect(true);
@@ -59,9 +66,17 @@ export class RealtimeGateway
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
-    if (client.data.userId) {
-      this.logger.log('Usuario desconectado del chat');
+    const userId = client.data.userId as string | undefined;
+    if (!userId) return;
+
+    const restantes = (this.conexiones.get(userId) ?? 1) - 1;
+    if (restantes <= 0) {
+      this.conexiones.delete(userId);
+      this.server.emit('presence:update', { userId, online: false });
+    } else {
+      this.conexiones.set(userId, restantes);
     }
+    this.logger.log('Usuario desconectado del chat');
   }
 
   enviarAUsuario(userId: string, evento: string, datos: unknown) {
